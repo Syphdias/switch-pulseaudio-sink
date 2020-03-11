@@ -1,0 +1,23 @@
+#!/bin/sh
+# Prompts user to select an audio device (output sink) to be used
+# as default output and set it for all active applications (input sinks).
+# (requires `pactl` and `dmenu`)
+
+# get all output devices and all active applications
+SINK_OUTPUTS=$(pactl list sinks | grep -Po '(?<=Description: ).*')
+SINK_INPUT_INDICES=$(pactl list sink-inputs |grep '^Sink Input #' |sed 's/.*#//')
+
+# prompt user to select an audio device
+selected_sink_output=$(printf "$SINK_OUTPUTS" \
+                       | dmenu -i -fn "Roboto Mono for Powerline-11" -p "Select sink:")
+sink_output_index=$(pactl list sinks \
+                    | grep -Fe 'Sink #' -e "Description: $selected_sink_output" \
+                    | grep -FB1 'Description:' \
+                    | grep -Po '(?<=Sink #).*')
+
+pactl set-default-sink $sink_output_index
+
+# set new default sink for every application
+while read sink_input_index; do
+    pactl move-sink-input $sink_input_index $sink_output_index
+done <<<$SINK_INPUT_INDICES
