@@ -3,6 +3,9 @@
 # as default output and set it for all active applications (input sinks).
 # (requires `pactl` and `dmenu`)
 
+set -o errexit
+set -o pipefail
+
 # get all output devices and all active applications
 SINK_OUTPUTS=$(pactl list sinks | grep -Po '(?<=Description: ).*')
 SINK_INPUT_INDICES=$(pactl list sink-inputs |grep '^Sink Input #' |sed 's/.*#//')
@@ -19,5 +22,5 @@ pactl set-default-sink $sink_output_index
 
 # set new default sink for every application
 while read sink_input_index; do
-    pactl move-sink-input $sink_input_index $sink_output_index
+    pactl move-sink-input $sink_input_index $sink_output_index 2>/dev/null || true
 done <<<$SINK_INPUT_INDICES
