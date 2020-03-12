@@ -6,6 +6,8 @@
 set -o errexit
 set -o pipefail
 
+LANG="en_US.utf-8"
+
 # get all output devices and all active applications
 SINK_OUTPUTS=$(pactl list sinks | grep -Po '(?<=Description: ).*')
 SINK_INPUT_INDICES=$(pactl list sink-inputs |grep '^Sink Input #' |sed 's/.*#//')
