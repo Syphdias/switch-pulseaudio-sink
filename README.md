@@ -5,9 +5,8 @@ You need `pactl` and `dmenu` to use this script.
 ## Installing
 Just put the script to a place you like and create a cool shortcut. 
 ## Contributions
-If you like to contribute to this Repository, just open a PR and i will have a look at it.
+If you like to contribute to this Repository, just open a PR and I will have a look at it.
 ## License
 MIT License
 
 Copyright (c) 2020 Syphdias
-
