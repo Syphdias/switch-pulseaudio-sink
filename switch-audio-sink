@@ -8,6 +8,15 @@ set -o pipefail
 
 LANG="en_US.utf-8"
 
+while getopts tn opts; do
+    case "$opts" in
+        n)      notify=true;;
+        [?])    echo >&2 "Usage: $0 [-n]"
+                exit 1;;
+        esac
+done
+shift $((OPTIND-1))
+
 # get all output devices and all active applications
 SINK_OUTPUTS=$(pactl list sinks | grep -Po '(?<=Description: ).*')
 SINK_INPUT_INDICES=$(pactl list sink-inputs |grep '^Sink Input #' |sed 's/.*#//')
@@ -26,3 +35,6 @@ pactl set-default-sink $sink_output_index
 while read sink_input_index; do
     pactl move-sink-input $sink_input_index $sink_output_index 2>/dev/null || true
 done <<<$SINK_INPUT_INDICES
+
+[ "$notify" == "true" ] \
+    && notify-send -u normal "Sink Changed" "New Sink: $selected_sink_output"
