@@ -50,7 +50,7 @@ SINK_OUTPUTS=$(pactl list sinks \
                | grep -Po '(?<=Description: ).*' || true)
 match_count=$(grep '^' -c <<<"$sink_output_index")
 
-if [ $match_cout -eq 1 ]; then
+if [ $match_count -eq 1 ]; then
     # select sink output
     sink_output_index=$sink_output_index
     selected_sink_output=$(pactl list sinks \
