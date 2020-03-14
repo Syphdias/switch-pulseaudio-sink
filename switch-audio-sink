@@ -11,23 +11,42 @@ LANG="en_US.utf-8"
 while getopts tn opts; do
     case "$opts" in
         n)      notify=true;;
-        [?])    echo >&2 "Usage: $0 [-n]"
+        [?])    echo >&2 "Usage: $0 [-n] [searchpattern]"
                 exit 1;;
         esac
 done
 shift $((OPTIND-1))
+sink_search_pattern="$@"
 
 # get all output devices and all active applications
 SINK_OUTPUTS=$(pactl list sinks | grep -Po '(?<=Description: ).*')
 SINK_INPUT_INDICES=$(pactl list sink-inputs |grep '^Sink Input #' |sed 's/.*#//')
 
-# prompt user to select an audio device
-selected_sink_output=$(printf "$SINK_OUTPUTS" \
-                       | dmenu -i -fn "Roboto Mono for Powerline-11" -p "Select sink:")
-sink_output_index=$(pactl list sinks \
-                    | grep -Fe 'Sink #' -e "Description: $selected_sink_output" \
-                    | grep -FB1 'Description:' \
-                    | grep -Po '(?<=Sink #).*')
+if [ -n "$sink_search_pattern" ]; then
+    sink_output_index=$(pactl list sinks \
+                        | grep -ie 'Sink #' -e "Description: .*$sink_search_pattern" \
+                        | grep -FB1 'Description:' \
+                        | grep -Po '(?<=Sink #).*' || true)
+
+    # fail if pattern ambiguous or no match
+    matches=$(grep '^' -c <<<"$sink_output_index")
+    if [ $matches -lt 1 ]; then
+        # TODO: if toggle is true, toggle through matches
+        echo >&2 "No matches for sink pattern"
+        exit 1
+    elif [ $matches -gt 1 ]; then
+        echo >&2 "More than one sink for pattern"
+        exit 1
+    fi
+else
+    # fall back to interactive select and prompt user to select an audio device
+    selected_sink_output=$(printf "$SINK_OUTPUTS" \
+                           | dmenu -i -fn "Roboto Mono for Powerline-11" -p "Select sink:")
+    sink_output_index=$(pactl list sinks \
+                        | grep -Fe 'Sink #' -e "Description: $selected_sink_output" \
+                        | grep -FB1 'Description:' \
+                        | grep -Po '(?<=Sink #).*')
+fi
 
 pactl set-default-sink $sink_output_index
 
