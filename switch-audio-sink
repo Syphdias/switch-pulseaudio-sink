@@ -8,10 +8,11 @@ set -o pipefail
 
 LANG="en_US.utf-8"
 
-while getopts tn opts; do
+while getopts nd opts; do
     case "$opts" in
         n)      notify=true;;
-        [?])    echo >&2 "Usage: $0 [-n] [searchpattern]"
+        d)      default=true;;
+        [?])    echo >&2 "Usage: $0 [-n] [-d] [searchpattern]"
                 exit 1;;
         esac
 done
@@ -21,6 +22,17 @@ sink_search_pattern="$@"
 # get all output devices and all active applications
 SINK_OUTPUTS=$(pactl list sinks | grep -Po '(?<=Description: ).*')
 SINK_INPUT_INDICES=$(pactl list sink-inputs |grep '^Sink Input #' |sed 's/.*#//')
+CURRENT_DEFAULT_SINK_OUTPUT="$(pactl info |grep -Po '(?<=Default Sink: ).*')"
+CURRENT_DEFAULT_SINK_OUTPUT=$(pactl list sinks \
+                              | grep -ie 'Description:' -e "Name: $CURRENT_DEFAULT_SINK_OUTPUT" \
+                              | grep -FA1 'Name:' \
+                              | grep -Po '(?<=Description: ).*')
+
+# remove default sink if not explicitly wanted
+if [ "$default" != "true" ]; then
+    SINK_OUTPUTS=$(grep -vF "$CURRENT_DEFAULT_SINK_OUTPUT" <<<"$SINK_OUTPUTS")
+fi
+
 
 if [ -n "$sink_search_pattern" ]; then
     sink_output_index=$(pactl list sinks \
