@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Prompts user to select an audio device (output sink) to be used
 # as default output and set it for all active applications (input sinks).
 # (requires `pactl` and `dmenu`)
@@ -42,11 +42,11 @@ fi
 
 # filter for search pattern
 sink_output_index=$(pactl list sinks \
-                    | grep -ie 'Sink #' -e "Description: .*$sink_search_pattern" \
+                    | grep -iEe 'Sink #' -e "Description: .*${sink_search_pattern}" \
                     | grep -FB1 'Description:' \
                     | grep -Po '(?<=Sink #).*' || true)
 SINK_OUTPUTS=$(pactl list sinks \
-               | grep -ie "Description: .*$sink_search_pattern" \
+               | grep -iEe "Description: .*${sink_search_pattern}" \
                | grep -Po '(?<=Description: ).*' || true)
 match_count=$(grep '^' -c <<<"$sink_output_index")
 
@@ -64,24 +64,23 @@ elif [ $match_count -lt 1 ]; then
 
 elif [ "$toggle" == "true" ]; then
     # toggle through selected
-    # TODO: find sink_output_index after current default
-    selected_sink_output=$(pactl list sinks \
-                           | grep -e "^Sink #" -e "Description:" \
-                           | grep -A4 "^Sink #$CURRENT_DEFAULT_SINK_OUTPUT_INDEX" \
-                           | tail -2 \
-                           | grep -Po '(?<=Description: ).*')
-    if [ "$selected_sink_output" == "$CURRENT_DEFAULT_SINK_OUTPUT" ]; then
-        # sink still the same => start from the top
-        selected_sink_output=$(pactl list sinks \
-                               | grep -e "^Sink #" -e "Description:" \
-                               | head -2 \
-                               | grep -Po '(?<=Description: ).*')
+    new_output_sink_index=""
+    for output_index in $sink_output_index; do
+        if [ $output_index -gt $CURRENT_DEFAULT_SINK_OUTPUT_INDEX ]; then
+            new_output_sink_index=$output_index
+            break
+        fi
+    done
+    # fallback to first match if no output sink was found
+    if [ -z "$new_output_sink_index" ]; then
+        new_output_sink_index=$(head -1 <<<"$sink_output_index")
     fi
 
-    sink_output_index=$(pactl list sinks \
-                        | grep -Fe 'Sink #' -e "Description: $selected_sink_output" \
-                        | grep -FB1 'Description:' \
-                        | grep -Po '(?<=Sink #).*')
+    sink_output_index=$new_output_sink_index
+    selected_sink_output=$(pactl list sinks \
+                           | grep -e "^Sink #$sink_output_index" -e "Description:" \
+                           | grep -FA1 "Sink #$sink_output_index" \
+                           | grep -Po '(?<=Description: ).*')
 
 else
     # fall back to interactive select and prompt user to select an audio device
@@ -93,9 +92,10 @@ else
                         | grep -Po '(?<=Sink #).*')
 fi
 
+# set new default sink for new applications
 pactl set-default-sink $sink_output_index
 
-# set new default sink for every application
+# set new sink for every application
 while read sink_input_index; do
     pactl move-sink-input $sink_input_index $sink_output_index 2>/dev/null || true
 done <<<$SINK_INPUT_INDICES
