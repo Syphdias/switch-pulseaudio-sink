@@ -31,6 +31,7 @@ def notify(title, text):
     try:
         import gi
         gi.require_version('Gtk', '3.0')
+        gi.require_version('Notify', '0.7')
         from gi.repository import Notify
 
         Notify.init("pulse-audio-cycle")
@@ -88,10 +89,16 @@ def main(args):
                 # extract patterns from string, e.g. "sink regex;profile regex"
                 profile_pattern_sink, profile_pattern_card = \
                     profile_pattern.split(";", 1)
+                profile_pattern_sink = re.compile(profile_pattern_sink)
+                profile_pattern_card = re.compile(profile_pattern_card)
 
                 # only check the profile pattern if the sink pattern matches
-                if (re.search(profile_pattern_sink, sink.description) and
-                        re.search(profile_pattern_card, profile.description)):
+                if (
+                    (re.search(profile_pattern_sink, sink.description) or
+                        re.search(profile_pattern_sink, sink.name)) and
+                    (re.search(profile_pattern_card, profile.description) or
+                        re.search(profile_pattern_card, profile.name))
+                ):
                     sink_card_profiles.append((sink, profile))
                     profile_count += 1
                     break   # one match in enough
@@ -144,12 +151,13 @@ def main(args):
         except AttributeError:
             profile_name = None
 
-        # DEBUG
-        # print("C:", current_card, current_profile_name)
-        # print("Is this:", sink.card, profile)
-        # print(sink.card == current_card, current_profile_name is None, profile_name == current_profile_name)
-        # print()
-        # DEBUG
+        if args.verbose >= 2:
+            print("C:", current_card, current_profile_name)
+            print("Is this:", sink.card, profile)
+            print(sink.card == current_card,
+                  current_profile_name is None,
+                  profile_name == current_profile_name)
+            print()
 
         # I need to compare cards (or their indices) because sinks change with profiles
         if (
@@ -181,16 +189,17 @@ def main(args):
     # move all input sinks (apps/X clients) to new output sink
     for input_sink in pulse.sink_input_list():
         if args.verbose:
-            print(f"{input_sink.proplist['application.name']}")
+            print(f" Switching {input_sink.proplist['application.name']}")
         if not args.dry:
-            pulse.sink_input_move(input_sink.index, new_sink.index)  # WRONG: new_sink.index
+            pulse.sink_input_move(input_sink.index, new_sink.index)
 
     # Show notification
     if args.notify:
-        notify(
-            "Sink Changed",
-            f"New Sink: {new_sink.description}\n"
-            "New Profile: {new_profile.description}")
+        details = f"New Sink: {new_sink.description}"
+        if new_profile:
+            details += f"\nNew Profile: {new_profile.description}"
+
+        notify("Sink Changed", details)
 
 
 if __name__ == "__main__":
@@ -200,14 +209,14 @@ if __name__ == "__main__":
         action="store_true", default=False,
         help="Use this to notify which Sink and Profile was swiched to",
     )
-    # default setting only makes sense to force displaying default sink in
+    # NODO: default setting only makes sense to force displaying default sink in
     # interactive menu
     # parser.add_argument(
     #     "--default", "-d",
     #     default=False,
     #     help="",
     # )
-    # this will always toggle/cycle for now
+    # NODO: this will always toggle/cycle for now
     # parser.add_argument(
     #     "--toggle", "-t",
     #     help="",
@@ -216,7 +225,7 @@ if __name__ == "__main__":
         "--profile", "-p",
         action="append", default=[],
         help="With \"regex_for_sink regex_for_profile_the_card_should_get\". "
-             "Can be provides multiple times – for different "
+             "Can be provides multiple times – for different sinks."
     )
     # examples:
     #   # headset(w/goodsound) -> speaker(any) -> …
@@ -242,7 +251,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--verbose", "-v",
         action="count", default=0,
-        help="Print extra"
+        help="Print extra details for debugging purposes"
     )
 
     args = parser.parse_args()
