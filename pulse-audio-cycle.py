@@ -75,7 +75,7 @@ def main(args):
             sinks.append(sink)
         else:
             # this sink is not a match so we can skip the rest of the logic
-            break
+            continue
 
         profile_count = 0
         available_profiles = [
