@@ -7,7 +7,7 @@ You can provide a list of tuples to filter for
 # cycle through filtered; no profle change
 Headset1(Core) -> UE -> Monitor(GP104) -> Headset2(Jabra) -> [repeat]
 
-./pulse-audio-cycle.py -t -n '(Core|UE|GP104|Jabra)' -p 'GP104 HDMI3'
+./pulse-audio-cycle.py -t -n '(Core|UE|GP104|Jabra)' -p 'GP104' 'HDMI3'
 # cycle through filtered and set proper profile
 Headset1 -> UE -> Monitor(set profile) -> Headset2 -> [repeat]
 
@@ -62,7 +62,7 @@ def main(args):
 
     sink_pattern = args.sink
     profile_patterns = args.profile
-    # ["sink_regex1;profile_regex1", "sink_regex1;profile_regex1"]
+    # ["sink_regex1", "profile_regex1"], ["sink_regex1", "profile_regex1"]]
 
     sinks = []
     # after loop: [sink1, sink2]
@@ -85,10 +85,7 @@ def main(args):
         # loop over all available profiles for that card of the sink
         for profile in available_profiles:
             # loop over all provided profile patterns
-            for profile_pattern in profile_patterns:
-                # extract patterns from string, e.g. "sink regex;profile regex"
-                profile_pattern_sink, profile_pattern_card = \
-                    profile_pattern.split(";", 1)
+            for profile_pattern_sink, profile_pattern_card in profile_patterns:
                 profile_pattern_sink = re.compile(profile_pattern_sink)
                 profile_pattern_card = re.compile(profile_pattern_card)
 
@@ -108,7 +105,7 @@ def main(args):
         if profile_count == 0:
             sink_card_profiles.append((sink, None))
 
-    # Also useful for finding all sinks and profiles: --dry -v -s '' -p ';'
+    # Also useful for finding all sinks and profiles: --dry -v -s '' -p '' ''
     if args.verbose:
         for sink, sink_profile in itertools.groupby(
                 sink_card_profiles, key=lambda x: x[0]):
@@ -205,7 +202,7 @@ def main(args):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
-        "--notify", "-n",
+        "-n", "--notify",
         action="store_true", default=False,
         help="Use this to notify which Sink and Profile was swiched to",
     )
@@ -222,34 +219,39 @@ if __name__ == "__main__":
     #     help="",
     # )
     parser.add_argument(
-        "--profile", "-p",
-        action="append", default=[],
+        "-p", "--profile",
+        nargs=2,
+        action="append",
+        default=[["", ""]],
+        metavar=("SINK_REGEX", "PROFILE_REGEX"),
         help="With \"regex_for_sink regex_for_profile_the_card_should_get\". "
-             "Can be provides multiple times – for different sinks."
+             "Can be provides multiple times – for different sinks patterns."
     )
     # examples:
     #   # headset(w/goodsound) -> speaker(any) -> …
-    #   ./$0 -s 'headset|speakers' -p 'headset;goodsound'
+    #   ./$0 -s 'headset|speakers' -p 'headset' 'goodsound'
     #
     #   # headset(w/goodsound) -> headset(s/voice)-> speaker(any) -> …
-    #   ./$0 -s 'headset|speakers' -p 'headset;goodsound|voice'
+    #   ./$0 -s 'headset|speakers' -p 'headset' 'goodsound|voice'
     #
     #   # headset(w/goodsound) -> headset(s/voice)-> speaker(w/p1) -> speaker(w/p2) -> …
-    #   ./$0 -s 'headset|speakers' -p 'headset;goodsound|voice' -p 'speaker;p1|p2'
+    #   ./$0 -s 'headset|speakers' -p 'headset' 'goodsound|voice' -p 'speaker' 'p1|p2'
 
     parser.add_argument(
-        "--sink", "-s",
+        "-s", "--sink",
         default="",
+        metavar="SINK_REGEX",
         help="Regex pattern of sinks to cylce through. "
              "Use in combination with --profile to set profiles during cycle"
     )
+    # TODO: change sink_regex to card_regex but add option to also try sink description/name
     parser.add_argument(
         "--dry",
         action="store_true", default=False,
         help="Don't change sinks or profile (Useless without -v)"
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "-v", "--verbose",
         action="count", default=0,
         help="Print extra details for debugging purposes"
     )
