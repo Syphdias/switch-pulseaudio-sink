@@ -180,9 +180,6 @@ def main(args):
             if not profile.available and not args.with_unavailable:
                 continue
 
-            # logging.info(f"  {card.name} has profile {profile.name}")
-            # logging.info(f"  Sink {sink_for_current_card.description}")
-
             # Check every given profile
             for cp_card_pattern, cp_profile_pattern in args.profile:
                 cp_card_pattern_matched = False
