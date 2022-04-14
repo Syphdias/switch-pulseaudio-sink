@@ -222,29 +222,38 @@ def main(args):
 
     # change sink (has to be done always because card profile also changes sink)
     new_sink = sink_for_card(new_card, pulse)
-    if args.verbose:
-        logging.info(f"New Card: {new_card.name}")
-        if args.use_sink_description:
-            logging.info(f"-> New Sink: {new_sink.description} ")
-
-    if not args.dry:
-        pulse.sink_default_set(new_sink)
-
-    # move all input sinks (apps/X clients) to new output sink
-    for input_sink in pulse.sink_input_list():
+    if new_sink:
         if args.verbose:
-            logging.info(
-                f"  -> Switching {input_sink.proplist['application.name']}")
+            logging.info(f"New Card: {new_card.name}")
+            if args.use_sink_description:
+                logging.info(f"-> New Sink: {new_sink.description} ")
+
         if not args.dry:
-            pulse.sink_input_move(input_sink.index, new_sink.index)
+            pulse.sink_default_set(new_sink)
 
-    # Show notification
-    if args.notify:
-        details = f"New Sink: {new_sink.description}"
-        if new_profile:
-            details += f"\nNew Profile: {new_profile.description}"
+        # move all input sinks (apps/X clients) to new output sink
+        for input_sink in pulse.sink_input_list():
+            if args.verbose:
+                logging.info(
+                    f"  -> Switching {input_sink.proplist['application.name']}")
+            if not args.dry:
+                pulse.sink_input_move(input_sink.index, new_sink.index)
 
-        notify("Sink Changed", details)
+        # Show notification
+        if args.notify:
+            details = f"New Sink: {new_sink.description}"
+            if new_profile:
+                details += f"\nNew Profile: {new_profile.description}"
+
+            notify("Sink Changed", details)
+
+    else:
+        logging.info("NO sink found for new Card.")
+
+        # Show notification
+        if args.notify:
+            notify("Sink unchanged", "Did not find a sink for card")
+
 
 
 if __name__ == "__main__":
