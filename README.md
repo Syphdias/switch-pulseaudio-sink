@@ -1,6 +1,14 @@
-# Switch-pulseaudio-sink
+# Switch Pulseaudio Sink
 This repository includes two tools to switch pulseaudio default output and the
 output for every application to another sink.
+
+- Documentation (and FAQ – if any) can be found in this README.
+- There is currently no package to install the script.
+  You need to download the script you want directly or clone the repository.
+- Feel free to file issues to report bugs, ask questions,
+  or request features.
+- Feel free to open a pull request. Please use the [black](
+  https://github.com/psf/black) code formatter if modifying python code.
 
 ## pulse-audio-cycle.py
 
@@ -50,7 +58,7 @@ optional arguments:
 
 Unlike [`switch-audio-sink.sh`](#switch-audio-sink.sh) it does not offer an
 interactive selection. If anybody needs it, feel to open a PR with a new option
-for `--selection-command 'demenu'` or something of that sort. Currently I do not
+for `--selection-command 'dmenu'` or something of that sort. Currently I do not
 have a use case for interactivity.
 
 ### Requirements
