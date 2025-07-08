@@ -1,4 +1,5 @@
 # Switch Pulseaudio Sink
+
 This repository includes two tools to switch pulseaudio default output and the
 output for every application to another sink.
 
@@ -21,11 +22,13 @@ If you do not filter for profile, the profile of the card will just stay the
 same.
 
 To get a list of all Cards and Profiles:
+
 ```sh
 ./pulse-audio-cycle.py -v --dry --use-sink-description --with-unavailable
 ```
 
 To get a overview of all options use:
+
 ```
 ❯ ./pulse-audio-cycle.py --help
 usage: pulse-audio-cycle.py [-h] [-n] [-p CARD_REGEX PROFILE_REGEX]
@@ -62,11 +65,13 @@ for `--selection-command 'dmenu'` or something of that sort. Currently I do not
 have a use case for interactivity.
 
 ### Requirements
-* pulsectl
-* python 3.6
-  (Because of format strings)
-* GTK 3.0 for notifications
 
+- pulsectl
+- python 3.6
+  (Because of format strings)
+- GTK 4.0 for notifications
+
+You can use `uv` or `pip` with `requirements.txt` to install dependencies.
 
 ## switch-audio-sink.sh
 
@@ -80,22 +85,33 @@ not, I kept the bash script for now. If the python version ever gets an
 interactive mode, it will be obsolete and get removed.
 
 ### Options
-* You can toggle by using `-t PATTERN`
-* You can send notification via `notify-send` with `-n`
-* Show current default output in dmenu with `-d`
+
+- You can toggle by using `-t PATTERN`
+- You can send notification via `notify-send` with `-n`
+- Show current default output in dmenu with `-d`
 
 ### Requirements
-* `pactl`
-* `dmenu` if you use it interactively and not toggle trough options with `-t`
-* `notify-send` if you use `-n`
+
+- `pactl`
+- `dmenu` if you use it interactively and not toggle trough options with `-t`
+- `notify-send` if you use `-n`
 
 # Installing
+
 Just put the script you need in a place you like, e.g. `~/.local/bin/`.
 
 # Contributions
+
 If you like to contribute to this repository, just open a PR and I will have a look at it.
 
+## Updating `requirements.txt` after Dependency Update
+
+```sh
+uv export --no-hashes --format requirements-txt > requirements.txt
+```
+
 # License
+
 MIT License
 
 Copyright (c) 2021 Syphdias

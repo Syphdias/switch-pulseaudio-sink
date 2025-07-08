@@ -2,3 +2,7 @@
 #    uv export --no-hashes --format requirements-txt
 pulsectl==24.12.0
     # via switch-pulseaudio-sink
+pycairo==1.28.0
+    # via pygobject
+pygobject==3.52.3
+    # via switch-pulseaudio-sink
