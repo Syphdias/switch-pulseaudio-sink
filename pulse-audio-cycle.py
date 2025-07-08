@@ -26,32 +26,70 @@ Know Issues:
     * Order of switching cannot be adjusted
       Reason: I have no need for it
 """
-from sys import stderr
-import re
 import logging
+import re
 from argparse import ArgumentParser
+from pathlib import Path
+from sys import stderr
+
 from pulsectl import Pulse
 
 
-def notify(title, text):
+def notify(
+    title: str,
+    text: str,
+    notification_id_file: str | None = None,
+    verbose: int = 0,
+    progress: int | None = None,
+) -> None:
     """Use GTK to send notifications"""
     try:
         import gi
 
-        gi.require_version("Gtk", "3.0")
+        gi.require_version("Gtk", "4.0")
         gi.require_version("Notify", "0.7")
-        from gi.repository import Notify
-
-        Notify.init("pulse-audio-cycle")
-        n = Notify.Notification.new(title, text)
-        n.show()
+        from gi.repository import GLib, Notify
 
     except ModuleNotFoundError:
         print(
             "Sorry, something went wrong with the notification. "
-            "Are you using Gtk 3.0?",
+            "Are you using Gtk 4.0?",
             file=stderr,
         )
+        return
+
+    Notify.init("pulse-audio-cycle")
+
+    if verbose:
+        print("notification id file:", notification_id_file)
+
+    # check if we have a know notification id
+    notification_id = None
+    if notification_id_file:
+        try:
+            notification_id = int(Path(notification_id_file).read_text())
+        except FileNotFoundError:
+            pass
+        except ValueError:
+            print(
+                f"notification id file malformated: {notification_id_file}",
+                file=stderr,
+            )
+
+    if verbose:
+        print("notification id:", notification_id)
+
+    n = Notify.Notification.new(title, text)
+    if notification_id:
+        n.set_property("id", notification_id)
+    if progress:
+        n.set_hint("value", GLib.Variant("i", progress))
+    n.show()
+
+    # save notification id to enable subsequent call to read it
+    # and modify notification
+    if not notification_id and notification_id_file:
+        Path(notification_id_file).write_text(str(n.get_property("id")))
 
 
 def sink_for_card(card, pulse):
@@ -253,7 +291,8 @@ def main(args):
             if new_profile:
                 details += f"\nNew Profile: {new_profile.description}"
 
-            notify("Sink Changed", details)
+            notification_id_file = "/tmp/pulse-audio-cycle"
+            notify("Pulse Audio Cycle", details, notification_id_file)
 
     else:
         logging.info("NO sink found for new Card.")
